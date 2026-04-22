@@ -23,9 +23,8 @@ jobs:
             - name: Checkout code
               uses: actions/checkout@v4
               with:
-                # TODO#1: why do secret scanners need git history?
                 # Set fetch-depth to 0 so TruffleHog can diff base..HEAD across all commits.
-                fetch-depth: ???
+                fetch-depth: 0
 
               # TruffleHog scans code + commit history for verified secrets (live creds). It can be noisy, but is a great first line of defense.
             - name: Run TruffleHog
@@ -33,30 +32,18 @@ jobs:
               continue-on-error: true # NOTE THAT THIS IS NOT A BEST PRACTICE — ideally we would fail here and fix secrets before moving on to later gates, but for demo purposes we want to see results from all scanners.
               with:
                 path: ./
-                # TODO#2: set base + HEAD refs so TruffleHog scans the commit diff
-                # base: ???
-                # head: ???
-                # TODO#3: add extra_args flag to report ONLY VERIFIED secrets (reduce noise)
-                # extra_args: ???
                 base: ${{ github.event.repository.default_branch }}
-                head: ???
-                extra_args: ???
+                head: HEAD
+                extra_args: --results=verified
 
             # Gitleaks scans code + history for regex patterns that look like secrets. It can be more accurate than TruffleHog, but may miss live creds that don't match known patterns.
-            # TODO#4: add Gitleaks step below.
-            # Requirements:
-            #   - uses: gitleaks/gitleaks-action@v2
-            #   - continue-on-error: true
-            #   - env GITHUB_TOKEN from secrets.GITHUB_TOKEN
-            #   - enable SARIF artifact upload + job summary via env vars
-            # Q: difference between TruffleHog (verified live creds) vs Gitleaks (regex patterns)?
             - name: Run Gitleaks
-              uses: ???
+              uses: gitleaks/gitleaks-action@v2
               continue-on-error: true
               env:
-                GITHUB_TOKEN: ???
-                GITLEAKS_ENABLE_UPLOAD_ARTIFACT: ???
-                GITLEAKS_ENABLE_SUMMARY: ???
+                GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+                GITLEAKS_ENABLE_UPLOAD_ARTIFACT: true
+                GITLEAKS_ENABLE_SUMMARY: true
 
     # GATE#1a: SAST via SonarQube 
     sast-scan:
